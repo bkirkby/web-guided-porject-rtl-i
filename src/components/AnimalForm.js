@@ -1,62 +1,37 @@
-import React, { useState } from "react";
+import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
-const AnimalForm = ({ errors, touched, values }) => {
-  const [animals, setAnimals] = useState([
-    {
-      species: "Lion",
-      age: "12",
-      notes: "",
-      id: 365
-    }
-  ]);
-  const [animal, setAnimal] = useState({ species: "", age: "", notes: "" });
+import AnimalForm from './AnimalForm';
 
-  // Handle changes from form inputs
-  const handleChange = event => {
-    setAnimal({ ...animal, [event.target.name]: event.target.value });
-  };
+test('renders AnimalForm', () => {
+  render(<AnimalForm />);
+});
 
-  const handleSubmit = event => {
-    event.preventDefault();
-    const newAnimal = {
-      ...animal,
-      id: Date.now()
-    };
-    setAnimals([...animals, newAnimal]);
-  };
+test('user can fill out and submit the form', async () => {
+  render(<AnimalForm />);
 
-  return (
-    <div className="animal-form">
-      <form onSubmit={event => handleSubmit(event)}>
-        <label htmlFor="species">Species:</label>
-        <input
-          id="species"
-          type="text"
-          name="species"
-          onChange={event => handleChange(event)}
-        />
-        <label htmlFor="age">Age:</label>
-        <input
-          id="age"
-          type="text"
-          name="age"
-          onChange={event => handleChange(event)}
-        />
-        <label htmlFor="notes">Notes:</label>
-        <textarea
-          id="notes"
-          type="text"
-          name="notes"
-          onChange={event => handleChange(event)}
-        />
-        <button>Submit!</button>
-      </form>
-      <h4>Current Animals</h4>
-      {animals.map(animal => (
-        <p key={animal.id}>{animal.species}</p>
-      ))}
-    </div>
-  );
-};
+  const speciesInput = screen.getByLabelText(/species/i);
+  const ageInput = screen.getByLabelText(/age/i);
+  const notesInput = screen.getByLabelText(/notes/i);
 
-export default AnimalForm;
+  // console.log(speciesInput);
+
+  // fill out the form (top to bottom)
+  fireEvent.change(speciesInput, { target: { value: 'dog' } });
+  fireEvent.change(ageInput, { target: { value: '11' } });
+  fireEvent.change(notesInput, { target: { value: 'woof!' } });
+
+  // assert the forms have the values
+  expect(speciesInput).toHaveValue('dog');
+
+  // submit the form - click button - this will sometimes update the page asynchronously
+  const button = screen.getByRole("button", { name: /submit!/i });
+  fireEvent.click(button);
+
+  // assert the animal has been added to the list
+  const newAnimal = await screen.findByText(/dog/i);
+  expect(newAnimal).toBeTruthy();
+  // console.log(newAnimal);
+  // const newAnimal = await screen.findByText(/dog/i);
+  expect(newAnimal).toHaveTextContent(/dog/);
+});
